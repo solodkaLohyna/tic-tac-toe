@@ -15,13 +15,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "./components/ui/dialog";
 import JSConfetti from "js-confetti";
 import { Button } from "./components/ui/button";
 
@@ -33,6 +26,7 @@ import { playersData } from "./data/players";
 
 //Types
 import type { Player as PlayerType } from "@/types/Player";
+import { Modal } from "./components/dialog/Modal";
 
 const jsConfetti = new JSConfetti();
 
@@ -58,7 +52,7 @@ function App() {
     setIsGameOver(true);
   }, []);
 
-  const unpdatePlayerScore = (player: PlayerType) => {
+  const updatePlayerScore = (player: PlayerType) => {
     const found = player.score.find((entry) => entry.size === size);
 
     if (found && typeof found.score === "number") {
@@ -112,9 +106,15 @@ function App() {
         )
       );
       const player = { ...currentPlayer };
-      unpdatePlayerScore(player);
+      updatePlayerScore(player);
       return;
     }
+
+    const getNextPlayer = () => {
+      const currentIndex = players.findIndex((p) => p.id === currentPlayer.id);
+      const nextIndex = (currentIndex + 1) % players.length;
+      return players[nextIndex];
+    };
 
     const isDraw = updatedBoard.every((cell) => cell !== null);
     if (isDraw) {
@@ -142,8 +142,7 @@ function App() {
     );
     setMoveTime(0);
 
-    const nextPlayer =
-      currentPlayer.id === players[0].id ? players[1] : players[0];
+    const nextPlayer = getNextPlayer();
     setCurrentPlayer(nextPlayer);
 
     startTimer();
@@ -167,9 +166,7 @@ function App() {
   };
 
   const handeNewGame = () => {
-    setPlayers((prevPlayers) =>
-      prevPlayers.map((p) => ({ ...p, time: 0 }))
-    );
+    setPlayers((prevPlayers) => prevPlayers.map((p) => ({ ...p, time: 0 })));
     setMoveTime(0);
     startTimer();
     setSize(pendingSize);
@@ -256,30 +253,18 @@ function App() {
         />
       </div>
 
-      <Dialog open={showModal} onOpenChange={setShowModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {!isDraw ? "🎉 Congratulation!" : "It's Draw!"}
-            </DialogTitle>
-          </DialogHeader>
-          <p>
-            {!isDraw
-              ? `Player ${currentPlayer.id} (${currentPlayer.symbol}) win with time ${currentPlayer.time} second!`
-              : "Draw! Try again!"}
-          </p>
-          <DialogFooter>
-            <button
-              onClick={() => {
-                setShowModal(false);
-              }}
-              className="px-4 py-2 bg-blue-500 text-white rounded"
-            >
-              OK
-            </button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <Modal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        title={!isDraw ? "🎉 Congratulation!" : "It's Draw!"}
+        message={
+          !isDraw
+            ? `Player ${currentPlayer.id} (${currentPlayer.symbol}) win in ${
+                currentPlayer.time + moveTime
+              } seconds!`
+            : "Draw! Try again!"
+        }
+      />
     </div>
   );
 }
